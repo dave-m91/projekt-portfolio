@@ -46,4 +46,4 @@ class League(BaseModel):
 class Counts(BaseModel):
     league_count: int
     team_count: int
-    palyer_count: int
+    player_count: int

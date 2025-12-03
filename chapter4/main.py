@@ -38,7 +38,7 @@ def read_players(skip: int = 0,
 @app.get("/v0/players/{player_id}", response_model=schemas.Player)
 def read_player(player_id: int,
                 db: Session = Depends(get_db)):
-    player = crud.get_players(db,
+    player = crud.get_player(db,
                               player_id=player_id)
     if player is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zawodnika")
@@ -82,7 +82,7 @@ def read_teams(skip: int = 0,
                team_name: str = None,
                league_id: int = None,
                db: Session = Depends(get_db)):
-    teams = crud.get_teamsdb(db,
+    teams = crud.get_teams(db,
                              skip=skip,
                              limit=limit,
                              min_last_changed_date=minimum_last_changed_date,
