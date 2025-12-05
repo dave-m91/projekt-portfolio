@@ -1,10 +1,56 @@
 import httpx
+import swcpy.swc_config as config
+
+from .schemas import League, Team, Player, Performance
+from typing import List
+import backoff
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SWCClient:
-    def __init__(self, swc_base_url: str):
-        self,swc_base_url = swc_base_url
-    
-    def get_health_check(self):
-        # make the API call
-        with httpx.Client(base_url=self.swc_base_url) as client:
-            return client.get("/")
+    """Interakcja z SWC API
+    SDK ułatwia proces uytkownia SWC Fantasy Football API
+    Przykładowe uzycie:
+    client = SWCClient()
+    response = client.get_health_check()"""
+
+    HEALTH_CHECK_ENDPOINT = "/"
+    LIST_LEAGUES_ENDPOINT = "/v0/leagues/"
+    LIST_PLAYERS_ENDPOINT = "/v0/players/"
+    LIST_PERFORMANCES_ENDPOINT = "/v0/performances/"
+    LIST_TEAMS_ENDPOINT = "/v0/teams/"
+    GET_COUNTS_ENDPOINT = "/v0/counts/"
+    BULK_FILE_BASE_URL = (
+        "https://raw.githubusercontent.com/dave-m91/projekt-portfolio/main/bulk/"
+    )
+    def __init__(self, input_config: config.SWCConfig):
+        logger.debug(f"Bulk file base URL: {self.BULK_FILE_BASE_URL}")
+        logger.debug(f"Input config: {input_config}")
+        self.swc_base_url = input_config.swc_base_url
+        self.backoff = input_config.swc_backoff
+        self.backoff_max_time = input_config.swc_backoff_max_time
+        self.bulk_file_format = input_config.swc_bulk_file_format
+        self.BULK_FILE_NAMES = {
+            "players": "player_data",
+            "leagues": "league_data",
+            "performances": "performance_data",
+            "teams": "teams_data",
+            "team_player": "team_player_data"
+        }
+        if self.backoff:
+            self.call_api = backoff.on_exception(
+                wait_gen=backoff.expo,
+                exception=(httpx.RequestError, httpx.HTTPStatusError),
+                max_time = self.backoff_max_time,
+                jitter=backoff.random_jitter,
+            )(self.call_api)
+        if self.bulk_file_format.lower() == "parquet":
+            self.BULK_FILE_NAMES = {
+                key: value + ".parquet" for key, value in self.BULK_FILE_NAMES.items()
+            }
+        else:
+            self.BULK_FILE_NAMES = {
+                key: value + ".csv" for key, value in self.BULK_FILE_NAMES.items()
+            }
+        logger.debug(f"Bulk file dictionary: {self.BULK_FILE_NAMES}")
