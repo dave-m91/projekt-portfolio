@@ -29,14 +29,14 @@ class League(Base):
     league_id = Column(Integer, primary_key=True, index=True)
     league_name = Column(String, nullable=False)
     scoring_type = Column(String, nullable=False)
-    last_changed_name = Column(Date, nullable=False)
+    last_changed_date = Column(Date, nullable=False)
     teams = relationship("Team", back_populates="league")
 
 class Team(Base):
     __tablename__ = "team"
     team_id = Column(Integer, primary_key=True, index=True)
     team_name = Column(String, nullable=False)
-    last_changed_name = Column(Date, nullable=False)
+    last_changed_date = Column(Date, nullable=False)
     league_id = Column(Integer, ForeignKey("league.league_id"))
     league = relationship("League", back_populates="teams")
     players = relationship("Player", secondary="team_player", back_populates="teams")
