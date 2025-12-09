@@ -39,7 +39,7 @@ class Team(Base):
     last_changed_name = Column(Date, nullable=False)
     league_id = Column(Integer, ForeignKey("league.league_id"))
     league = relationship("League", back_populates="teams")
-    player = relationship("Player", secondary="team_player", back_populates="teams")
+    players = relationship("Player", secondary="team_player", back_populates="teams")
 
 
 class TeamPlayer(Base):

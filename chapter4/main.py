@@ -6,7 +6,29 @@ from datetime import date
 import crud, schemas
 from database import SessionLocal
 
-app = FastAPI()
+api_description = """
+API zapewnia dostęp do odczytu informacji z API SportsWorldVentral (SWC) Fantasy Football
+Punkty końcowe są następujące:
+## Analityka
+Uzyskaj informacje o kondycji interfejsu API oraz liczbie lig, drużyn i zawodników.
+
+## Zawodnik
+Możesz uzyskać listę zawodników NFL lub wyszukać konkretnego zawodnika według
+identyfikatora player_id.
+
+## Punktacja
+Możesz uzyskać listę wyników zawodników NFL, w tym zdobytych przez nich punktów fantasy
+według systemu punktacji lig SWC.
+
+## Członkostwo
+Uzyskaj informacje o wszystkich ligach fantasy football SWC i występujących w nich
+drużynach."""
+
+app = FastAPI(
+    description=api_description,
+    title="Sport World Central (SWC) Fantasy Footlball API",
+    version="0.1"
+)
 
 def get_db():
     db = SessionLocal()
@@ -16,11 +38,11 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
+@app.get("/", tags=["analityka"])
 async def root():
     return {"message": "Test stanu API zakończony sukcesem"}
 
-@app.get("/v0/players/", response_model=list[schemas.Player])
+@app.get("/v0/players/", response_model=list[schemas.Player], tags=["zawodnik"])
 def read_players(skip: int = 0,
                  limit: int = 100,
                  minimum_last_changed_date: date = None,
@@ -35,7 +57,7 @@ def read_players(skip: int = 0,
                                last_name=last_name)
     return players
 
-@app.get("/v0/players/{player_id}", response_model=schemas.Player)
+@app.get("/v0/players/{player_id}", response_model=schemas.Player, tags=["zawodnik"])
 def read_player(player_id: int,
                 db: Session = Depends(get_db)):
     player = crud.get_player(db,
@@ -44,7 +66,7 @@ def read_player(player_id: int,
         raise HTTPException(status_code=404, detail="Nie znaleziono zawodnika")
     return player
 
-@app.get("/v0/performances/", response_model=list[schemas.Performance])
+@app.get("/v0/performances/", response_model=list[schemas.Performance], tags=["punktacja"])
 def read_performances(skip: int = 0,
                       limit: int = 100,
                       minimum_last_changed_date: date = None,
@@ -55,14 +77,14 @@ def read_performances(skip: int = 0,
                                          min_last_changed_date=minimum_last_changed_date)
     return performances
 
-@app.get("/v0/leagues/{league_id}", response_model=schemas.League)
+@app.get("/v0/leagues/{league_id}", response_model=schemas.League, tags=["członkostwo"])
 def read_league(league_id: int, db: Session = Depends(get_db)):
     league = crud.get_league(db, league_id=league_id)
     if league is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono ligi")
     return league
 
-@app.get("/v0/leagues/", response_model=list[schemas.League])
+@app.get("/v0/leagues/", response_model=list[schemas.League], tags=["członkostwo"])
 def read_leagues(skip: int = 0,
                  limit: int = 100,
                  minimum_last_changed_date: date = None,
@@ -75,7 +97,7 @@ def read_leagues(skip: int = 0,
                                league_name=league_name)
     return leagues
 
-@app.get("/v0/teams/", response_model=list[schemas.Team])
+@app.get("/v0/teams/", response_model=list[schemas.Team], tags=["członkostwo"])
 def read_teams(skip: int = 0,
                limit: int = 100,
                minimum_last_changed_date: date = None,
@@ -90,7 +112,7 @@ def read_teams(skip: int = 0,
                              league_id=league_id)
     return teams
 
-@app.get("/v0/counts", response_model=schemas.Counts)
+@app.get("/v0/counts", response_model=schemas.Counts, tags=["analityka"])
 def get_count(db: Session = Depends(get_db)):
     counts = schemas.Counts(
         league_count=crud.get_league_count(db),

@@ -14,8 +14,8 @@ www.sportsworldcentral.com.
 - [Zestaw narzędzi programistycznych (SDK)](#zestaw-narzedzi-programistycznych-sdk)
 
 ## API publiczne
-*Wkrótce dostępne*
-Niebawem wdrożymy naszą aplikację. Sprawdź później adres publicznego API.
+API dostpępne jest pod adresem https://projekt-portfolio-api-823609971533.europe-west1.run.app/
+Dokumentacja dostępna jest pod adresem https://projekt-portfolio-api-823609971533.europe-west1.run.app/docs
 
 ## Pierwsze kroki
 Dziękujemy za korzystanie z API SportsWorldCentral. To Twoje kompleksowe rozwiązanie

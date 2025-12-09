@@ -22,7 +22,7 @@ class SWCClient:
     LIST_TEAMS_ENDPOINT = "/v0/teams/"
     GET_COUNTS_ENDPOINT = "/v0/counts/"
     BULK_FILE_BASE_URL = (
-        "https://raw.githubusercontent.com/dave-m91/projekt-portfolio/main/bulk/"
+        "https://raw.githubusercontent.com/dave-m91/projekt-portfolio/main/bulk"
     )
     def __init__(self, input_config: config.SWCConfig):
         logger.debug(f"Bulk file base URL: {self.BULK_FILE_BASE_URL}")
@@ -55,69 +55,72 @@ class SWCClient:
             }
         logger.debug(f"Bulk file dictionary: {self.BULK_FILE_NAMES}")
 
-def call_api(self,
-             api_endpoint: str,
-             api_params: dict = None) -> httpx.Response:
-    """Make API call and logs errors."""
-    if api_params:
-        api_params = {key: val for key, val in api_params.items()
-                      if val is not None}
+    def call_api(self,
+                api_endpoint: str,
+                api_params: dict = None
+            ) -> httpx.Response:
+            """Makes API call and logs errors."""
+
+            if api_params:
+                api_params = {key: val for key, val in api_params.items() if val is not None}
+
+            try:
+                with httpx.Client(base_url=self.swc_base_url) as client: 
+                    logger.debug(f"base_url: {self.swc_base_url}, api_endpoint: {api_endpoint}, api_params: {api_params}")
+                    response = client.get(api_endpoint, params=api_params)
+                    logger.debug(f"Response JSON: {response.json()}")
+                    return response
+            except httpx.HTTPStatusError as e:
+                logger.error(
+                    f"HTTP status error occurred: {e.response.status_code} {e.response.text}"
+                )
+                raise
+            except httpx.RequestError as e:
+                logger.error(f"Request error occurred: {str(e)}")
+                raise
+
+    def get_health_check(self) -> httpx.Response:
+        """Sprawdza, czy intefejs API działa
         
-        try:
-            with httpx.Client(base_url = self.swc_base_url) as client:
-                logger.debug(f"base_url: {self.swc_base_url}, api_endpoint:\
-                             {api_endpoint}, api_params: {api_params}")
-                response = client.get(api_endpoint, params=api_params)
-                logger.debug(f"Respponse JSON: {response.json()}")
-                return response
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP status error occurred: {e.response.status_code}\
-                         {e.response.text}")
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"Request error occurred: {str(e)}")
-            raise
+        Returns:
+            Obiekt httpx.Response zawierający starus HTTP, odpowiedź JSON
+            i inne informacje"""
+        
+        logger.debug("Sprawdzanie stanu działania API")
+        endpoint_url = self.HEALTH_CHECK_ENDPOINT
+        return self.call_api(endpoint_url)
 
-def get_health_chec(self) -> httpx.Response:
-    """Sprawdza, czy intefejs API działa
-    
-    Returns:
-        Obiekt httpx.Response zawierający starus HTTP, odpowiedź JSON
-        i inne informacje"""
-    
-    logger.debu("Sprawdzanie stanu działania API")
-    endpoint_url = self.HEALTH_CHECK_ENDPOINT
-    return self.call_api(endpoint_url)
+    def list_leagues(
+            self,
+            skip: int = 0,
+            limit: int = 100,
+            minimum_last_changed_date: str = None,
+            league_name: str = None
+    ) -> list[League]:
+        """Zwraca listę lig przefiltrowaną według parametrów.
+        Wywołuje punkt końcowy API v0/leagues i zwraca listę obiektów League.
+        Returns:
+        Lista obiektów schemas.League objects. Każdy reprezentuje jedną
+        ligę fantasy SportsWorldCentral."""
 
-def list_leagues(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        minimum_last_changed_date: str = None,
-        league_name: str = None
-) -> list[League]:
-    """Zwraca listę lig przefiltrowaną według parametrów.
-    Wywołuje punkt końcowy API v0/leagues i zwraca listę obiektów League.
-    Returns:
-    Lista obiektów schemas.League objects. Każdy reprezentuje jedną
-    ligę fantasy SportsWorldCentral."""
+        logger.debug("Pobieranie listy lig")
 
-    logger.debug("Pobieranie listy lig")
+        params = {
+            "skip": skip,
+            "limit": limit,
+            "minimum_last_changed_date" : minimum_last_changed_date,
+            "league_name": league_name
+        }
+        response = self.call_api(self.LIST_LEAGUES_ENDPOINT, params)
+        return [League(**league) for league in response.json()]
 
-    params = {
-        "skip": skip,
-        "limit": limit,
-        "minimum_last_changed_date" : minimum_last_changed_date,
-        "league_name": league_name
-    }
-    response = self.call_api(self.LIST_LEAGUES_ENDPOINT, params)
-    return [League(**league) for league in response.json()]
+    def get_bulk_player_file(self) -> bytes:
+        """Zwraca plik z danymi użytkowników"""
+        logger.debug("Uruchomiono metodę pobrania pliku zawodników")
+        player_file_path = self.BULK_FILE_BASE_URL + self.BULK_FILE_NAMES["players"]
+        response = httpx.get(player_file_path, follow_redirects=True)
+        if response.status_code == 200:
+            logger.debug("Plik pobrano prawidłowo")
+            return response.content
+        
 
-def get_bulk_player_file(self) -> bytes:
-    """Zwraca plik z danymi użytkowników"""
-    logger.debug("Uruchomiono metodę pobrania pliku zawodników")
-    player_file_path = self.BULK_FILE_BASE_URL + self.BULK_FILE_NAMES["players"]
-    response = httpx.get(player_file_path, follow_redirects=True)
-    if response.staus_code == 200:
-        logger.debug("Plik pobrano prawidłowo")
-        return response.content

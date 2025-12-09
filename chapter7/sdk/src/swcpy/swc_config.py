@@ -13,7 +13,7 @@ class SWCConfig:
             swc_base_url: str = None,
             backoff: bool = True,
             backoff_max_time: int = 30,
-            bulk_file_format: int = "csv"
+            bulk_file_format: str = "csv"
     ):
         '''Konstruktor dla klasy konfiguracji
         Args:
